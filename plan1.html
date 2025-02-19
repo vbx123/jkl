@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>جدول رمضان</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap');
+
+        body {
+            background-color: #1f381f;
+            color: white;
+            font-family: 'Tajawal', sans-serif;
+            text-align: right;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            padding: 15px;
+        }
+
+        .day-selector {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 20px;
+            margin: 15px 0;
+        }
+
+        .day-selector i {
+            cursor: pointer;
+            margin: 0 10px;
+        }
+
+        .plan-box {
+            background-color: #2d472d;
+            padding: 15px;
+            margin: 10px auto;
+            width: 95%;
+            border-radius: 10px;
+            text-align: right;
+            box-sizing: border-box;
+        }
+
+        .checkbox-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        label {
+            display: flex;
+            align-items: center;
+            font-size: 16px;
+        }
+
+        input[type="checkbox"] {
+            margin-left: 10px;
+        }
+
+        .section-title {
+            font-size: 14px;
+            font-weight: bold;
+            margin: 10px auto;
+            padding: 10px;
+            background-color: #2d472d;
+            border-radius: 10px;
+            width: 95%;
+            text-align: right;
+            white-space: pre-line;
+        }
+
+        .section-title pre {
+            font-size: 14px;
+            white-space: pre-line;
+            word-wrap: break-word;
+            margin: 0;
+            padding: 0;
+            line-height: 1.8;
+        }
+
+        .note-btn {
+            background-color: #d4a017;
+            color: black;
+            border: none;
+            padding: 8px;
+            margin-top: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .note-input {
+            display: none;
+            width: 100%;
+            padding: 5px;
+            margin-top: 5px;
+            border-radius: 5px;
+            border: none;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+
+        .note-text {
+            font-size: 14px;
+            background-color: #3b5a3b;
+            padding: 5px;
+            border-radius: 5px;
+            margin-top: 5px;
+            display: none;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="day-selector">
+        <i class="fa fa-arrow-right" onclick="changeDay(-1)"></i>
+        <span id="current-day">1 رمضان</span>
+        <i class="fa fa-arrow-left" onclick="changeDay(1)"></i>
+    </div>
+
+    <div class="section-title">
+        <pre>
+كل يوم حاولي تنفذي حاجة من دول يروحي:
+
+✔ الصلاة على النبي 100 مرة (هتأخذ 5 دقائق فقط).
+
+✔ الاستغفار 100 مرة (استغفر الله، لن يأخذ 5 دقائق).
+
+✔ صدقة ولو بجنيه لأي شخص محتاج.
+
+✔ الاهتمام بوالدتك والدعاء بعد كل صلاة.
+        </pre>
+    </div>
+
+    <div id="prayer-list"></div>
+
+    <script>
+        const prayers = ["الفجر", "الظهر", "العصر", "المغرب", "العشاء"];
+        let currentDay = 1;
+
+        function generatePrayerList() {
+            let container = document.getElementById("prayer-list");
+            container.innerHTML = "";
+
+            prayers.forEach(prayer => {
+                let prayerBox = document.createElement("div");
+                prayerBox.className = "plan-box";
+                prayerBox.innerHTML = `
+                    <h3>${prayer}</h3>
+                    <div class="checkbox-group">
+                        <label><input type="checkbox" id="${prayer}-prayer"> الصلاة</label>
+                        <label><input type="checkbox" id="${prayer}-sunnah"> السنن</label>
+                        <label><input type="checkbox" id="${prayer}-quran"> 4 صفحات قرآن</label>
+                        <label><input type="checkbox" id="${prayer}-azkar"> الأذكار</label>
+                        <label><input type="checkbox" id="${prayer}-post-azkar"> أذكار ما بعد الصلاة</label>
+                    </div>
+                    <button class="note-btn" onclick="toggleNoteInput('${prayer}')">إضافة ملاحظة</button>
+                    <input type="text" class="note-input" id="${prayer}-note-input" placeholder="اكتب ملاحظتك هنا" onblur="saveNote('${prayer}')">
+                    <div class="note-text" id="${prayer}-note-text"></div>
+                `;
+                container.appendChild(prayerBox);
+            });
+
+            loadDayData();
+        }
+
+        function saveDayData() {
+            let data = {};
+
+            prayers.forEach(prayer => {
+                data[prayer] = {
+                    prayer: document.getElementById(`${prayer}-prayer`).checked,
+                    sunnah: document.getElementById(`${prayer}-sunnah`).checked,
+                    quran: document.getElementById(`${prayer}-quran`).checked,
+                    azkar: document.getElementById(`${prayer}-azkar`).checked,
+                    postAzkar: document.getElementById(`${prayer}-post-azkar`).checked,
+                    note: document.getElementById(`${prayer}-note-input`).value
+                };
+            });
+
+            localStorage.setItem(`ramadan_day_${currentDay}`, JSON.stringify(data));
+        }
+
+        function loadDayData() {
+            let savedData = localStorage.getItem(`ramadan_day_${currentDay}`);
+            if (savedData) {
+                savedData = JSON.parse(savedData);
+
+                prayers.forEach(prayer => {
+                    document.getElementById(`${prayer}-prayer`).checked = savedData[prayer]?.prayer || false;
+                    document.getElementById(`${prayer}-sunnah`).checked = savedData[prayer]?.sunnah || false;
+                    document.getElementById(`${prayer}-quran`).checked = savedData[prayer]?.quran || false;
+                    document.getElementById(`${prayer}-azkar`).checked = savedData[prayer]?.azkar || false;
+                    document.getElementById(`${prayer}-post-azkar`).checked = savedData[prayer]?.postAzkar || false;
+                    let noteInput = document.getElementById(`${prayer}-note-input`);
+                    let noteText = document.getElementById(`${prayer}-note-text`);
+                    noteInput.value = savedData[prayer]?.note || "";
+                    noteText.innerText = savedData[prayer]?.note || "";
+                    noteText.style.display = savedData[prayer]?.note ? "block" : "none";
+                });
+            }
+        }
+
+        function toggleNoteInput(prayer) {
+            document.getElementById(`${prayer}-note-input`).style.display = "block";
+        }
+
+        function saveNote(prayer) {
+            saveDayData();
+            let input = document.getElementById(`${prayer}-note-input`);
+            let text = document.getElementById(`${prayer}-note-text`);
+            text.innerText = input.value;
+            text.style.display = "block";
+            input.style.display = "none";
+        }
+
+        function changeDay(direction) {
+            saveDayData();
+            currentDay = Math.max(1, Math.min(30, currentDay + direction));
+            document.getElementById("current-day").innerText = `${currentDay} رمضان`;
+            generatePrayerList();
+        }
+
+        window.onload = generatePrayerList;
+    </script>
+
+</body>
+</html>
